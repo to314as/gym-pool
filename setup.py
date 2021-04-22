@@ -1,6 +1,6 @@
 from setuptools import setup
 
-setup(name='gym_pool',
+setup(name='gym-pool',
       version='0.0.1',
       url='https://github.com/to314as/gym-pool',
       author='Tobias Oberkofler',
