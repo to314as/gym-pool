@@ -8,16 +8,16 @@ import numpy as np
 import pygame
 import zope.event
 
-import ball
-import config
-import cue
-import cue_visible
-import event
-import graphics
-import table_sprites
-from ball import BallType
-from collisions import check_if_ball_touches_balls
-import collisions
+import gym_pool.envs.ball as ball
+import gym_pool.envs.config as config
+import gym_pool.envs.cue as cue
+import gym_pool.envs.cue_visible as cue_visible
+import gym_pool.envs.event as event
+import gym_pool.envs.graphics as graphics
+import gym_pool.envs.table_sprites as table_sprites
+from gym_pool.envs.ball import BallType
+from gym_pool.envs.collisions import check_if_ball_touches_balls
+import gym_pool.envs.collisions as collisions
 
 
 class Player(Enum):

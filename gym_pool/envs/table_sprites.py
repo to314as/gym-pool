@@ -1,8 +1,8 @@
 import numpy as np
 import pygame
 
-import config
-import gamestate
+import gym_pool.envs.config as config
+import gym_pool.envs.gamestate as gamestate
 
 
 class Hole(pygame.sprite.Sprite):

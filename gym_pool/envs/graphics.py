@@ -1,8 +1,8 @@
 import numpy as np
 import pygame
 
-import config
-import event
+import gym_pool.envs.config as config
+import gym_pool.envs.event as event
 
 
 class Canvas:

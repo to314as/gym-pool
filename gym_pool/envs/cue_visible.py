@@ -3,10 +3,10 @@ import math
 import numpy as np
 import pygame
 
-import config
-import event
-import gamestate
-import physics
+import gym_pool.envs.config as config
+import gym_pool.envs.event as event
+import gym_pool.envs.gamestate as gamestate
+import gym_pool.envs.physics as physics
 
 
 class Cue(pygame.sprite.Sprite):

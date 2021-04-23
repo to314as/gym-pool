@@ -1,11 +1,11 @@
 import pygame
 from pprint import pprint
 
-import collisions
-import event
-import gamestate
-import graphics
-import config
+import gym_pool.envs.collisions as collisions
+import gym_pool.envs.gamestate as gamestate
+import gym_pool.envs.config as config
+import gym_pool.envs.event as event
+import gym_pool.envs.graphics as graphics
 import argparse
 
 parser = argparse.ArgumentParser(description='RL training.')

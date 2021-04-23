@@ -1,14 +1,21 @@
 import numpy as np
-import utils
-import gamestate
-import collisions
-import event
+import functools
+import operator
+#import gym_pool.envs.utils as utils
+import gym_pool.envs.gamestate as gamestate
+import gym_pool.envs.collisions as collisons
+import gym_pool.envs.event as event
 import gym
 from gym import error, spaces
 from gym import utils
 from gym.utils import seeding
 import logging
 logger = logging.getLogger(__name__)
+
+
+class Utils:
+    def prod(l):
+        return functools.reduce(operator.mul, l, 1)
 
 class ActionSpace:
     def __init__(self, ranges):
@@ -119,7 +126,7 @@ class StateSpace:
 
             return encoded_state
 
-class PoolEnv(gym.Env):
+class PoolEnv(gym.Env, utils.EzPickle):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, num_balls=2, visualize=False):

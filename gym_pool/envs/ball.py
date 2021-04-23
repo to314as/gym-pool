@@ -5,10 +5,10 @@ from enum import Enum
 import numpy as np
 import pygame
 
-import collisions
-import config
-import event
-import physics
+import gym_pool.envs.collisions as collisions
+import gym_pool.envs.config as config
+import gym_pool.envs.event as event
+import gym_pool.envs.physics as physics
 
 
 class Ball():
