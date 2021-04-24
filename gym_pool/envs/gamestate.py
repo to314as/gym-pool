@@ -3,6 +3,7 @@ import math
 import random
 from pprint import pprint
 from enum import Enum
+import time
 
 import numpy as np
 import pygame
@@ -37,7 +38,7 @@ class GameState:
         pygame.display.set_caption(config.window_caption)
         event.set_allowed_events()
         zope.event.subscribers.append(self.game_event_handler)
-        self.canvas = graphics.Canvas()
+        self.canvas = graphics.Canvas(visualize)
         self.ball_num = ball_num
         self.collision_count = 0
         self.fps_clock = pygame.time.Clock()
@@ -104,10 +105,11 @@ class GameState:
         self.reset_state()
         self.generate_table()
         self.set_pool_balls(ball_num)
-        if not self.visualize:
-            self.cue = cue.Cue(self.white_ball)
-        else:
-            self.cue = cue_visible.Cue(self.white_ball)
+        self.cue = cue_visible.Cue(self.white_ball)
+        #if not self.visualize:
+        #    self.cue = cue.Cue(self.white_ball)
+        #else:
+        #    self.cue = cue_visible.Cue(self.white_ball)
             #self.cue = cue.Cue(self.white_ball)
         self.all_sprites.add(self.cue)
 
@@ -213,6 +215,13 @@ class GameState:
         self.all_sprites.add(self.table_coloring)
         self.all_sprites.add(self.holes)
         graphics.add_separation_line(self.canvas)
+
+    # NEW METHOD
+    def get_is_game_over(self):
+        # Is only the white ball left? Then game over
+        if len(self.balls.sprites()) == 1 and self.balls.sprites()[0].number == 0:
+            return True
+        return False
 
     def game_over(self, p1_won):
         font = config.get_default_font(config.game_over_label_font_size)
@@ -374,8 +383,11 @@ class GameState:
 
         events = event.events()
         game.cue.update_cue_displacement(real_force)  # replace 100 with the real input for displacement between 0, 100
-        game.cue.update_cue(game, 0, events,
-                            real_angle)  # replace the last parameter with the real angle between 0, 2pi
+        game.cue.update_cue(game, 0, events,real_angle)  # replace the last parameter with the real angle between 0, 2pi
+        if self.visualize:
+            game.cue.make_visible(game.current_player)
+            game.redraw_all()
+            time.sleep(0.5)
         game.cue.ball_hit()
         num_steps = 0
         while (not game.all_not_moving()):

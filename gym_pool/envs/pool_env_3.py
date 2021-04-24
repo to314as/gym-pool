@@ -1,9 +1,9 @@
 import logging
-from gym_soccer.envs.soccer_empty_goal import SoccerEmptyGoalEnv
+from gym_pool.envs.pool_env import PoolEnv
 
 logger = logging.getLogger(__name__)
 
-class SoccerAgainstKeeperEnv(SoccerEmptyGoalEnv):
+class PoolEnv3(PoolEnv):
     """
     SoccerAgainstKeeper initializes the agent most of the way down the
     field with the ball and tasks it with scoring on a keeper.
@@ -14,9 +14,7 @@ class SoccerAgainstKeeperEnv(SoccerEmptyGoalEnv):
 
     """
     def __init__(self):
-        super(SoccerAgainstKeeperEnv, self).__init__()
+        super(PoolEnv3, self).__init__(num_balls=4)
 
     def _configure_environment(self):
-        super(SoccerAgainstKeeperEnv, self)._start_hfo_server(defense_npcs=1,
-                                                              offense_on_ball=1,
-                                                              ball_x_min=0.6)
+        super(PoolEnv3, self).__init__(num_balls=4)

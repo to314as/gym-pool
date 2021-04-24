@@ -8,13 +8,13 @@ import gym_pool.envs.event as event
 import gym_pool.envs.graphics as graphics
 import argparse
 
-parser = argparse.ArgumentParser(description='RL training.')
-parser.add_argument('--visualize', dest='v', action='store_true',help='To see the visualization of the pool game.')
-args = parser.parse_args()
+#parser = argparse.ArgumentParser(description='RL training.')
+#parser.add_argument('--visualize', dest='v', action='store_true',help='To see the visualization of the pool game.')
+#args = parser.parse_args()
 was_closed = False
 ball_num=config.total_ball_num
 while not was_closed:
-    game = gamestate.GameState(ball_num=ball_num,visualize=args.v)
+    game = gamestate.GameState(ball_num=ball_num,visualize=True)
     #button_pressed = graphics.draw_main_menu(game)
 
     #if button_pressed == config.play_game_button: - don't want to wait for button to be pressed
@@ -34,7 +34,7 @@ while not was_closed:
             game.check_pool_rules()
             game.cue.make_visible(game.current_player)
             while not (
-                (events["closed"] or events["quit_to_main_menu"]) or game.is_game_over) and game.all_not_moving():
+                (events["closed"] or events["quit_to_main_menu"]) or game.get_is_game_over()) and game.all_not_moving():
                 game.redraw_all()
                 #game.redraw_all_no_gphx() #UNCOMMENT THIS TO DISABLE SEEING THE BOARD WHILE IT'S WAITING FOR INPUT
                 events = event.events()

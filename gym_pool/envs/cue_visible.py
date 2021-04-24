@@ -15,7 +15,7 @@ class Cue(pygame.sprite.Sprite):
         self.angle = 0
         self.color = config.player1_cue_color
         self.target_ball = target
-        self.visible = False
+        self.visible = True
         self.displacement = config.ball_radius
         self.sprite_size = np.repeat(
             [config.cue_length + config.cue_max_displacement], 2)
@@ -66,9 +66,9 @@ class Cue(pygame.sprite.Sprite):
         # +1 to prevent rounding errors
         return rect_area + 1 >= triangle_areas
 
-    def update_cue_displacement(self, mouse_pos, initial_mouse_dist):
-        displacement = physics.point_distance(
-            mouse_pos, self.target_ball.ball.pos) - initial_mouse_dist + config.ball_radius
+    def update_cue_displacement(self, displacement):
+        # displacement = physics.point_distance(
+        # mouse_pos, self.target_ball.ball.pos) - initial_mouse_dist + config.ball_radius
         if displacement > config.cue_max_displacement:
             self.displacement = config.cue_max_displacement
         elif displacement < config.ball_radius:
@@ -126,22 +126,17 @@ class Cue(pygame.sprite.Sprite):
         self.displacement = config.ball_radius
         self.visible = False
 
-    def update_cue(self, game_state, initial_mouse_dist, events):
+    def update_cue(self, game_state, initial_mouse_dist, events, angle):
         # updates cue position
         current_mouse_pos = events["mouse_pos"]
         displacement_from_ball_to_mouse = self.target_ball.ball.pos - current_mouse_pos
-        self.update_cue_displacement(current_mouse_pos, initial_mouse_dist)
+        # print(displacement_from_ball_to_mouse)
+        # self.update_cue_displacement(current_mouse_pos, initial_mouse_dist)
         prev_angle = self.angle
         # hack to avoid div by zero
         if not displacement_from_ball_to_mouse[0] == 0:
-            self.angle = 0.5 * math.pi - math.atan(
-                displacement_from_ball_to_mouse[1] / displacement_from_ball_to_mouse[0])
-            if displacement_from_ball_to_mouse[0] > 0:
-                self.angle -= math.pi
-
-        game_state.redraw_all(update=False)
-        self.draw_lines(game_state, self.target_ball, prev_angle +
-                        math.pi, config.table_color)
-        self.draw_lines(game_state, self.target_ball, self.angle +
-                        math.pi, (255, 255, 255))
-        pygame.display.flip()
+            self.angle = angle  # CALL FUNCTION HERE
+            # self.angle = 0.5 * math.pi - math.atan(
+            #    displacement_from_ball_to_mouse[1] / displacement_from_ball_to_mouse[0])
+            # if displacement_from_ball_to_mouse[0] > 0:
+            #    self.angle -= math.pi

@@ -1,5 +1,7 @@
 import logging
 from gym.envs.registration import register
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
 logger = logging.getLogger(__name__)
 
@@ -8,13 +10,10 @@ register(
     entry_point='gym_pool.envs:PoolEnv'
 )
 
-#register(
-#    id='SoccerEmptyGoal-v0',
-#    entry_point='gym_soccer.envs:SoccerEmptyGoalEnv',
-#    timestep_limit=1000,
-#    reward_threshold=10.0,
-#    nondeterministic = True,
-#)
+register(
+    id='Pool3-v0',
+    entry_point='gym_pool.envs:PoolEnv3'
+)
 
 #register(
 #    id='SoccerAgainstKeeper-v0',

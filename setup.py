@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='gym-pool',
-      version='0.1.11',
+      version='0.1.15',
       url='https://github.com/to314as/gym-pool',
       author='Tobias Oberkofler',
       author_email='tobi20083@gmail.com',

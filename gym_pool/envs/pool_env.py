@@ -124,7 +124,7 @@ class StateSpace:
 class PoolEnv(gym.Env, gym_utils.EzPickle):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, num_balls=2, visualize=False):
+    def __init__(self, num_balls=2, visualize=True):
         self.num_balls = num_balls
         self.visualize = visualize
 
