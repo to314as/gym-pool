@@ -4,6 +4,7 @@ import random
 from pprint import pprint
 from enum import Enum
 import time
+import os
 
 import numpy as np
 import pygame
@@ -34,6 +35,8 @@ class InterState(object):
 class GameState:
     def __init__(self, ball_num, visualize=False):
         self.visualize = visualize
+        if not visualize:
+            os.environ["SDL_VIDEODRIVER"] = "dummy"
         pygame.init()
         pygame.display.set_caption(config.window_caption)
         event.set_allowed_events()
