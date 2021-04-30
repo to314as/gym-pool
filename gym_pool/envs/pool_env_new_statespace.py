@@ -77,18 +77,21 @@ class StateSpace:
         self.m = m
         self.w = size[0]
         self.h = size[1]
+        diagonal=np.sqrt(self.w**2+self.h**2)
         self.buckets = None
+        self.bin_limits = np.array([[[0,diagonal],[0,np.pi],[0,diagonal],[0,np.pi],[0,diagonal],[0,np.pi],[0,diagonal],[0,np.pi]]for i in range(self.m-1)]).reshape(8,self.m)
+        self.num_bins = tuple([7 for i in range((self.m-1)*8)])
         self.is_discrete = False
 
     @property
     def n(self):
         if self.is_discrete:
-            return utils.prod(self.buckets) ** self.m
+            return self.num_bins
         else:
-            return self.m * 2
+            return (self.m-1)*8
 
     def set_buckets(self, buckets):
-        self.buckets = buckets
+        self.buckets = self.num_bins
         self.is_discrete = True
 
     def sample(self):
@@ -97,36 +100,52 @@ class StateSpace:
         else:
             return [(np.random.rand() * self.w, np.random.rand() * self.h) for _ in range(self.m)]
 
+    def get_discrete_state(self,state):
+        #print(state)
+        #print(self.num_bins)
+        #print(self.bin_limits)
+        ratios = [(state[i] + abs(self.bin_limits[i][0])) / (self.bin_limits[i][1] - self.bin_limits[i][0]) for i in range(len(state))]
+        #print("Ratios:",ratios)
+        s = [int(round((self.num_bins[i] - 1) * ratios[i])) for i in range(len(state))]
+        s = [min(self.num_bins[i] - 1, max(0, s[i])) for i in range(len(s))]
+        return tuple(s)
+
     def get_state(self, observation):
+        #print(observation)
+        observation=np.asarray(observation, dtype=np.float64)
         if not self.is_discrete:
-            return np.asarray(list(sum(observation, ())), dtype=np.float64)
+            #observation = np.asarray(observation, dtype=np.float64)
+            return observation
         else:
-            state = [(0, 0)] * len(observation)
-            bucket_x, bucket_y = self.buckets
-            lx, ux = 0, self.w
-            ly, uy = 0, self.h
+            ds=self.get_discrete_state(observation)
+            #print(ds)
+            #state = [(0, 0)] * len(observation)
+            #bucket_x, bucket_y = self.buckets
+            #lx, ux = 0, self.w
+            #ly, uy = 0, self.h
 
             # Map continuous values to discrete buckets
-            for i, (x, y) in enumerate(observation):
-                sx = 0 if x <= lx else (bucket_x - 1 if x >= ux else int(((x - lx) / (ux - lx) * bucket_x)))
-                sy = 0 if y <= ly else (bucket_y - 1 if y >= uy else int(((y - ly) / (uy - ly) * bucket_y)))
+            #for i, (x, y) in enumerate(observation):
+            #    sx = 0 if x <= lx else (bucket_x - 1 if x >= ux else int(((x - lx) / (ux - lx) * bucket_x)))
+            #    sy = 0 if y <= ly else (bucket_y - 1 if y >= uy else int(((y - ly) / (uy - ly) * bucket_y)))
 
-                state[i] = (sx, sy)
+             #   state[i] = (sx, sy)
 
             # Encode state into consecutive state space
-            unit_size = bucket_x * bucket_y
-            encoded_state = 0
-            for i, (sx, sy) in enumerate(state):
-                encoded_state += (sy * bucket_y + sx) * (unit_size ** i)
+            #unit_size = bucket_x * bucket_y
+            #encoded_state = 0
+            #for i, (sx, sy) in enumerate(state):
+            #    encoded_state += (sy * bucket_y + sx) * (unit_size ** i)
 
-            return encoded_state
+            return ds
 
-class PoolEnv(gym.Env, gym_utils.EzPickle):
+class PoolEnvNew(gym.Env, gym_utils.EzPickle):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, num_balls=2, visualize=True):
+    def __init__(self, num_balls=2, visualize=False, single = False):
         self.num_balls = num_balls
         self.visualize = visualize
+        self.singlePlayer = single
 
         # Two actions: angle, force
         # In the range of `ranges` in the game
@@ -137,8 +156,10 @@ class PoolEnv(gym.Env, gym_utils.EzPickle):
         self.state_space = StateSpace(num_balls, [1000, 1000])
 
         # Reward
-        self.ball_in_reward = 5
-        self.no_collision_penalty = -1
+        self.ball_in_reward = 50
+        self.white_ball_punishment = -5
+        self.no_ball_punishment = -1
+        self.eight_ball_punishment = 0
 
         # Init
         self.current_obs = None
@@ -162,17 +183,17 @@ class PoolEnv(gym.Env, gym_utils.EzPickle):
             self.state_space.set_buckets(state)
 
     def reset(self):
-        self.gamestate = gamestate.GameState(self.num_balls, self.visualize)
-        self.current_obs = self.gamestate.return_ball_state()
+        self.gamestate = gamestate.GameState(self.num_balls, self.visualize,self.singlePlayer)
+        self.current_obs = self.gamestate.return_ball_state_dict()
         self.current_state = self.state_space.get_state(self.current_obs)
         return self.current_state
 
     def step(self, action):
-        real_action = self.action_space.get_action(action)  # deal with discretized action
+        real_action = self.action_space.get_action(action) # deal with discretized action
         game = self.gamestate
-        ball_pos, holes_in, collision_count, done = game.step(game, real_action[0], real_action[1],new_state_space=False)
-
-        self.current_obs = ball_pos
-        self.current_state = self.state_space.get_state(ball_pos)
-        reward = self.ball_in_reward * holes_in + (0 if collision_count > 0 else self.no_collision_penalty)
+        ball_pos, holes_in, collision_count, white_in, eight_in, done = game.step(game, real_action[0],real_action[1])
+        full_state=ball_pos
+        self.current_state = self.state_space.get_state(full_state)
+        reward = self.ball_in_reward * holes_in + self.no_ball_punishment * collision_count + self.white_ball_punishment * white_in + self.eight_ball_punishment * eight_in
+        #print("current state:",self.current_state)
         return self.current_state, reward, done

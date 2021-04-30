@@ -7,4 +7,5 @@ import gym_pool.envs.table_sprites
 import gym_pool.envs.collisions
 import gym_pool.envs.gamestate
 from gym_pool.envs.pool_env import PoolEnv
+from gym_pool.envs.pool_env_new_statespace import PoolEnvNew
 from gym_pool.envs.pool_env_3 import PoolEnv3

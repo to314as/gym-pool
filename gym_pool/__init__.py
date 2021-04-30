@@ -11,6 +11,12 @@ register(
 )
 
 register(
+    id='Pool-v1',
+    entry_point='gym_pool.envs:PoolEnvNew'
+)
+
+
+register(
     id='Pool3-v0',
     entry_point='gym_pool.envs:PoolEnv3'
 )

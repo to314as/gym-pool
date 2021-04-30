@@ -33,10 +33,11 @@ class InterState(object):
     pass
 
 class GameState:
-    def __init__(self, ball_num, visualize=False):
+    def __init__(self, ball_num, visualize=False, singlePlayer = False):
         self.visualize = visualize
         if not visualize:
             os.environ["SDL_VIDEODRIVER"] = "dummy"
+        self.singlePlayer =singlePlayer
         pygame.init()
         pygame.display.set_caption(config.window_caption)
         event.set_allowed_events()
@@ -44,6 +45,8 @@ class GameState:
         self.canvas = graphics.Canvas(visualize)
         self.ball_num = ball_num
         self.collision_count = 0
+        self.white_in=0
+        self.eight_in=0
         self.fps_clock = pygame.time.Clock()
         self.start_pool(ball_num)
         events = event.events()
@@ -51,6 +54,12 @@ class GameState:
 
     def fps(self):
         return self.fps_clock.get_fps()
+    #NEW METHOD
+    def get_is_game_over(self):
+        #Is only the white ball left? Then game over
+        if len(self.balls.sprites()) == 1 and self.balls.sprites()[0].number == 0:
+            return True
+        return False
 
     def mark_one_frame(self):
         self.fps_clock.tick(2000)
@@ -77,7 +86,6 @@ class GameState:
                 self.all_sprites.remove(event.data)
             self.potted.append(event.data.number)
         elif event.type == "COLLISION":
-            self.collision_count += 1
             if not self.white_ball_1st_hit_is_set:
                 self.first_collision(event.data)
 
@@ -112,12 +120,13 @@ class GameState:
         #if not self.visualize:
         #    self.cue = cue.Cue(self.white_ball)
         #else:
-        #    self.cue = cue_visible.Cue(self.white_ball)
-            #self.cue = cue.Cue(self.white_ball)
+            #self.cue = cue_visible.Cue(self.white_ball)
+        #    self.cue = cue.Cue(self.white_ball)
         self.all_sprites.add(self.cue)
 
     def reset_state(self):
         # game state variables
+        self.first = True
         self.current_player = Player.Player1
         self.turn_ended = True
         self.white_ball_1st_hit_is_set = False
@@ -168,14 +177,16 @@ class GameState:
         # holes_x and holes_y holds the possible xs and ys of the table holes
         # with a position ID in the second tuple field
         # so the top left hole has id 1,1
-        holes_x = [(config.table_margin, 1), (config.resolution[0] /
+        self.holes_x = [(config.table_margin, 1), (config.resolution[0] /
                                               2, 2), (config.resolution[0] - config.table_margin, 3)]
-        holes_y = [(config.table_margin, 1),
+        self.holes_y = [(config.table_margin, 1),
                    (config.resolution[1] - config.table_margin, 2)]
+        print('holes x', self.holes_x)
+        print('holes y', self.holes_y)
         # next three lines are a hack to make and arrange the hole coordinates
         # in the correct sequence
         all_hole_positions = np.array(
-            list(itertools.product(holes_y, holes_x)))
+            list(itertools.product(self.holes_y, self.holes_x)))
         all_hole_positions = np.fliplr(all_hole_positions)
         all_hole_positions = np.vstack(
             (all_hole_positions[:3], np.flipud(all_hole_positions[3:])))
@@ -219,13 +230,6 @@ class GameState:
         self.all_sprites.add(self.holes)
         graphics.add_separation_line(self.canvas)
 
-    # NEW METHOD
-    def get_is_game_over(self):
-        # Is only the white ball left? Then game over
-        if len(self.balls.sprites()) == 1 and self.balls.sprites()[0].number == 0:
-            return True
-        return False
-
     def game_over(self, p1_won):
         font = config.get_default_font(config.game_over_label_font_size)
         if p1_won:
@@ -255,17 +259,26 @@ class GameState:
             self.can_move_white_ball = True
 
     def check_potted(self):
-        self.can_move_white_ball = False  # if white ball is potted, it will be created again and placed in the middle
+        if not self.first:
+            self.can_move_white_ball = False  # if white ball is potted, it will be created again and placed in the middle
         if 0 in self.potted:
+            self.white_in+=1
+            self.potted.remove(0)
             self.create_white_ball()
             self.cue.target_ball = self.white_ball
-            self.potted.remove(0)
-            self.turn_over(True)
-        #if 8 in self.potted:
-        #    if self.potting_8ball[self.current_player]:
-        #        self.game_over(self.current_player == Player.Player1)
-        #    else:
-        #        self.game_over(self.current_player != Player.Player1)
+            if not self.singlePlayer:
+                self.turn_over(True)
+            #else:
+                #print("Times white ball potted:",self.white_in)
+            return True
+        if 8 in self.potted:
+            self.eight_in+=1
+            if self.potting_8ball[self.current_player]:
+                self.game_over(self.current_player == Player.Player1)
+            else:
+                self.game_over(self.current_player != Player.Player1)
+            return True
+        return False
 
     def check_remaining(self):
         # a check if all striped or solid balls were potted
@@ -281,6 +294,16 @@ class GameState:
         self.potting_8ball = {Player.Player1: not ball_type_remaining[self.ball_assignment[Player.Player1]],
                               Player.Player2: not ball_type_remaining[self.ball_assignment[Player.Player2]]}
 
+    def check_remaining_single(self):
+        # a check if all solid balls were potted
+        solids_remaining = False
+        for remaining_ball in self.balls:
+            if remaining_ball.number != 0 and remaining_ball.number != 8:
+                solids_remaining = solids_remaining or not remaining_ball.ball_type == BallType.Striped
+
+        # decides if palyer should be potting 8ball
+        self.potting_8ball = {Player.Player1: not solids_remaining, Player.Player2: False}
+
     def first_collision(self, ball_combination):
         self.white_ball_1st_hit_is_set = True
         self.white_ball_1st_hit_8ball = ball_combination[0].number == 8 or ball_combination[1].number == 8
@@ -290,11 +313,20 @@ class GameState:
             self.white_ball_1st_hit_type = ball_combination[0].ball_type
 
     def check_pool_rules(self):
-        if self.ball_assignment is not None:
-            self.check_remaining()
-        self.check_potted()
+        if self.first:
+            self.first = False
+            self.check_potted()
+            self.on_next_hit()
+            return
+        if not self.singlePlayer:
+            self.potted_ball_rules()
+            if self.ball_assignment is not None:
+                self.check_remaining()
+        if self.singlePlayer:
+            self.check_remaining_single()
+
         self.first_hit_rule()
-        self.potted_ball_rules()
+        self.check_potted() # checks whether white ball was potted
         self.on_next_hit()
 
     def on_next_hit(self):
@@ -303,7 +335,7 @@ class GameState:
         self.potted = []
 
     def potted_ball_rules(self):
-        if len(self.potted) > 0:
+        if len(self.potted) > 0 and not self.singlePlayer:
             # if it wasnt decided which player goes for which type of balls
             # and the player potted the balls exclusively of one color (excluting white balls)
             # then it is decided based on which players turn it is right now and which type
@@ -331,8 +363,12 @@ class GameState:
         # for example if the current player hits a striped ball with the whit ball
         # but he should be potting solid balls, it is next players turn and he can move the white ball
         if not self.white_ball_1st_hit_is_set:
-            self.turn_over(True)
-        elif self.ball_assignment is not None:
+            self.collision_count += 1
+            if not self.singlePlayer:
+                self.turn_over(True)
+            #else:
+                #print("Times missed ball:",self.collision_count)
+        elif self.ball_assignment is not None and not self.singlePlayer:
             if not self.white_ball_1st_hit_8ball and self.ball_assignment[
                 self.current_player] != self.white_ball_1st_hit_type:
                 self.turn_over(True)
@@ -340,6 +376,12 @@ class GameState:
             # and if not he gets penalised
             elif self.white_ball_1st_hit_8ball:
                 self.turn_over(not self.potting_8ball[self.current_player])
+        #elif self.singlePlayer:
+            # checks if the 8ball was the first ball hit, and if so checks if the player needs to pot the 8ball
+            # and if not he gets penalised
+            #if self.white_ball_1st_hit_8ball and not self.potting_8ball[self.current_player]:
+                #print('Times 8ball potted:',self.eight_in)
+
     def return_game_state(self):
         state = InterState()
         state.balls=[]
@@ -363,9 +405,62 @@ class GameState:
                 state.append(currentBall)
         return state
 
-    def step(self, game, angle, force):
-        self.collision_count = 0
+    def return_ball_state_dict(self):
+        state = {}
+        for i in range(0, len(self.balls.sprites())):
+            currentBall = (self.balls.sprites()[i].ball.pos[0], self.balls.sprites()[i].ball.pos[1])
+            state[self.balls.sprites()[i].number] = [currentBall]
+        try:
+            white_ball = state[0][0]
+        except:
+            self.check_potted()
+            self.balls.add(self.white_ball)
+            state = {}
+            for i in range(0, len(self.balls.sprites())):
+                currentBall = (self.balls.sprites()[i].ball.pos[0], self.balls.sprites()[i].ball.pos[1])
+                state[self.balls.sprites()[i].number] = [currentBall]
+            white_ball = state[0][0]
+        for key in state.keys():
+            if key == 0:
+                state[key].extend([0, 0])
+            else:
+                state[key].append(self.euclidean_distance(white_ball, state[key][0]))
+                state[key].append(self.angle(white_ball, state[key][0]))
+            # add holes distances
+            for y in self.holes_y:
+                for x in self.holes_x:
+                    state[key].append(self.euclidean_distance((x[0], y[0]), state[key][0]))
+                    state[key].append(self.angle((x[0], y[0]), state[key][0]))
+                break
+        # for k,b in pos_dict.items():
+        #   print(k,b)
+        state = list(state.items())
+        full_state = []
+        for i in range(1,self.ball_num):
+            try:
+                self.balls.sprites()[i].number
+                #full_state += [state[i][1][0][0], state[i][1][0][1]] + state[i][1][1:]
+                full_state += state[i][1][1:]
+            except:
+                full_state += [0,0,0,0,0,0,0,0,]
+        full_state = np.array(full_state).flatten()
+        return full_state
+
+    def euclidean_distance(self, point1, point2):
+        return np.sqrt(np.square((point2[0] - point1[0])) + np.square((point2[1]-point1[1])))
+
+    def angle(self, point1, point2):
+        unit_vector_1 = point1/ np.linalg.norm(point1)
+        unit_vector_2 = point2 / np.linalg.norm(point2)
+        dot_product = np.dot(unit_vector_1, unit_vector_2)
+        angle = np.arccos(dot_product)
+        return angle
+
+    def step(self, game, angle, force,new_state_space=True):
         original_pos = self.return_ball_state()
+        self.collision_count_old = self.collision_count
+        self.white_in_old = self.white_in
+        self.eight_in_old = self.eight_in
         ang_in_max = 0
         ang_in_min = 1
 
@@ -386,11 +481,8 @@ class GameState:
 
         events = event.events()
         game.cue.update_cue_displacement(real_force)  # replace 100 with the real input for displacement between 0, 100
-        game.cue.update_cue(game, 0, events,real_angle)  # replace the last parameter with the real angle between 0, 2pi
-        if self.visualize:
-            game.cue.make_visible(game.current_player)
-            game.redraw_all()
-            time.sleep(0.5)
+        game.cue.update_cue(game, 0, events,
+                            real_angle)  # replace the last parameter with the real angle between 0, 2pi
         game.cue.ball_hit()
         num_steps = 0
         while (not game.all_not_moving()):
@@ -408,11 +500,16 @@ class GameState:
         #print('Num steps was ' + str(num_steps))
 
         new_pos = self.return_ball_state()
+        pos_dict = self.return_ball_state_dict()
+
         balls_in = len(original_pos) - len(new_pos)
         done = 1 if len(new_pos) == 1 else 0
 
         x = len(new_pos)
         for i in range(x, self.ball_num):
             new_pos.append((0, 0))
-        collision_count = self.collision_count
-        return (new_pos, balls_in, collision_count, done)
+        if not new_state_space:
+            collision_count = self.collision_count
+            return (new_pos, balls_in, collision_count, done)
+        #distance, position and angle should be def in there
+        return (pos_dict, balls_in, self.collision_count-self.collision_count_old, self.white_in-self.white_in_old, self.eight_in-self.eight_in_old, done)
